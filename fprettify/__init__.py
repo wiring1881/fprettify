@@ -1182,9 +1182,10 @@ def add_whitespace_charwise(line, spacey, scope_parser, format_decl, filename, l
                 if not re.search(r"^\s*(" + DEL_CLOSE_STR + r"|[,%:/\*])",
                                  line[pos + 1:], RE_FLAGS):
                     sep2 = 1 * spacey[8]
-                    if not re.search(r"^\s*THEN" + EOL_STR,
-                                     line[pos + 1:], RE_FLAGS):
-                        sep2 = 0
+                    if (sep2 == 0 and
+                        re.search(r"^\s*THEN" + EOL_STR,
+                                  line[pos + 1:], RE_FLAGS)):
+                        sep2 = 1
                 elif re.search(r"^\s*::", line[pos + 1:], RE_FLAGS):
                     sep2 = len(rhs) - len(rhs.lstrip(' ')) if not format_decl else 1
 
