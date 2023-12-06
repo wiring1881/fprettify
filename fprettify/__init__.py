@@ -1180,7 +1180,9 @@ def add_whitespace_charwise(line, spacey, scope_parser, format_decl, filename, l
                 # with some exceptions:
                 if not re.search(r"^\s*(" + DEL_CLOSE_STR + r"|[,%:/\*])",
                                  line[pos + 1:], RE_FLAGS):
-                    sep2 = 1
+                    # MODIFIED_01: sep2 varies with spacey[8].
+                    # sep2 = 1
+                    sep2 = 1 * spacey[8]
                 elif re.search(r"^\s*::", line[pos + 1:], RE_FLAGS):
                     sep2 = len(rhs) - len(rhs.lstrip(' ')) if not format_decl else 1
 
@@ -1258,7 +1260,9 @@ def add_whitespace_charwise(line, spacey, scope_parser, format_decl, filename, l
             if endre and endre.search(line_ftd):
                 is_end = True
     if is_end:
-        line_ftd = END_RE.sub(r'\1' + ' '*spacey[8] + r'\2', line_ftd)
+        # MODIFIED_02: Permanent whitespace between END- statements.
+        # line_ftd = END_RE.sub(r'\1' + ' '*spacey[8] + r'\2', line_ftd)
+        line_ftd = END_RE.sub(r'\1' + ' ' + r'\2', line_ftd)
 
     if level != 0:
         log_message('unpaired bracket delimiters', "info", filename, line_nr)
