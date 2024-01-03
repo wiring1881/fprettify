@@ -346,14 +346,14 @@ F90_KEYWORDS_RE = re.compile(r"\b(" + "|".join((
     "contains", "continue", "cycle", "data", "deallocate",
     "dimension", "do", "double", "else", "elseif", "elsewhere", "end",
     "enddo", "endfile", "endif", "entry", "equivalence", "exit",
-    "external", "forall", "format", "function", "goto", "if",
+    "external", "forall", "format", "formatted", "function", "goto", "if",
     "implicit", "in", "include", "inout", "inquire", "integer", "intent",
     "interface", "intrinsic", "logical", "module", "namelist", "none",
     "nullify", "only", "open", "operator", "optional", "out", "parameter",
     "pause", "pointer", "precision", "print", "private", "procedure",
     "program", "public", "read", "real", "recursive", "result", "return",
     "rewind", "save", "select", "sequence", "stop", "subroutine",
-    "target", "then", "type", "use", "where", "while", "write",
+    "target", "then", "type", "unformatted", "use", "where", "while", "write",
     ## F95 keywords.
     "elemental", "pure",
     ## F2003
