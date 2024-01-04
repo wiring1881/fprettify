@@ -134,6 +134,11 @@ FCT_RE = re.compile(
 ENDFCT_RE = re.compile(
     SOL_STR + r"END\s*FUNCTION(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
+MODPROC_RE = re.compile(
+    r"^([^\"']* )?MODULE\s*PROCEDURE\s+\w+\s*(\(.*\))?" + EOL_STR, RE_FLAGS)
+ENDPROC_RE = re.compile(
+    SOL_STR + r"END\s*PROCEDURE(\s+\w+)?" + EOL_STR, RE_FLAGS)
+
 MOD_RE = re.compile(SOL_STR + r"MODULE\s+\w+" + EOL_STR, RE_FLAGS)
 ENDMOD_RE = re.compile(SOL_STR + r"END\s*MODULE(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
@@ -305,7 +310,7 @@ def build_scope_parser(fypp=True, mod=True):
     parser = {}
     parser['new'] = \
         [parser_re(IF_RE), parser_re(DO_RE), parser_re(SELCASE_RE), parser_re(SUBR_RE),
-         parser_re(FCT_RE),
+         parser_re(FCT_RE), parser_re(MODPROC_RE),
          parser_re(INTERFACE_RE), parser_re(TYPE_RE), parser_re(ENUM_RE), parser_re(ASSOCIATE_RE),
          None, parser_re(BLK_RE), where_parser(WHERE_RE), forall_parser(FORALL_RE)]
 
@@ -317,7 +322,7 @@ def build_scope_parser(fypp=True, mod=True):
 
     parser['end'] = \
         [parser_re(ENDIF_RE), parser_re(ENDDO_RE), parser_re(ENDSEL_RE), parser_re(ENDSUBR_RE),
-         parser_re(ENDFCT_RE),
+         parser_re(ENDFCT_RE), parser_re(ENDPROC_RE),
          parser_re(ENDINTERFACE_RE), parser_re(ENDTYPE_RE), parser_re(ENDENUM_RE), parser_re(ENDASSOCIATE_RE),
          parser_re(ENDANY_RE,spec=False), parser_re(ENDBLK_RE), parser_re(ENDWHERE_RE), parser_re(ENDFORALL_RE)]
 
