@@ -1580,7 +1580,7 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             #--- MODIFIED_03: f_line is used to regenerate lines when impose_whitespace is True,
             #                 so if impose_whitespace is False, impose_case would fail. Here's
             #                 to ensure regeneration of lines even if impose_whitespace is False.
-            else
+            else:
                 lines = [f_line]
 
             # target indent for next line
