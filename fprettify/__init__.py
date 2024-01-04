@@ -1577,6 +1577,8 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
                     scope_parser, format_decl, orig_filename, stream.line_nr, auto_format)
 
                 lines = append_comments(lines, comment_lines, is_special)
+            else
+                lines = [f_line]
 
             # target indent for next line
             rel_indent = req_indents[nfl] if nfl < len(req_indents) else 0
