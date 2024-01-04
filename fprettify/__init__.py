@@ -1577,6 +1577,9 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
                     scope_parser, format_decl, orig_filename, stream.line_nr, auto_format)
 
                 lines = append_comments(lines, comment_lines, is_special)
+            #--- MODIFIED_03: f_line is used to regenerate lines when impose_whitespace is True,
+            #                 so if impose_whitespace is False, impose_case would fail. Here's
+            #                 to ensure regeneration of lines even if impose_whitespace is False.
             else
                 lines = [f_line]
 
