@@ -134,6 +134,7 @@ FCT_RE = re.compile(
 ENDFCT_RE = re.compile(
     SOL_STR + r"END\s*FUNCTION(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
+#--- MODIFIED_04: Add MODULE PROCEDURE and END PROCEDURE indentation support.
 MODPROC_RE = re.compile(
     r"^([^\"']* )?MODULE\s*PROCEDURE\s+\w+\s*(\(.*\))?" + EOL_STR, RE_FLAGS)
 ENDPROC_RE = re.compile(
@@ -310,6 +311,7 @@ def build_scope_parser(fypp=True, mod=True):
     parser = {}
     parser['new'] = \
         [parser_re(IF_RE), parser_re(DO_RE), parser_re(SELCASE_RE), parser_re(SUBR_RE),
+         #--- MODIFIED_04: Add MODPROC_RE to 'new' parser.
          parser_re(FCT_RE), parser_re(MODPROC_RE),
          parser_re(INTERFACE_RE), parser_re(TYPE_RE), parser_re(ENUM_RE), parser_re(ASSOCIATE_RE),
          None, parser_re(BLK_RE), where_parser(WHERE_RE), forall_parser(FORALL_RE)]
@@ -322,6 +324,7 @@ def build_scope_parser(fypp=True, mod=True):
 
     parser['end'] = \
         [parser_re(ENDIF_RE), parser_re(ENDDO_RE), parser_re(ENDSEL_RE), parser_re(ENDSUBR_RE),
+         #--- MODIFIED_04: Add ENDPROC_RE to 'end' parser.
          parser_re(ENDFCT_RE), parser_re(ENDPROC_RE),
          parser_re(ENDINTERFACE_RE), parser_re(ENDTYPE_RE), parser_re(ENDENUM_RE), parser_re(ENDASSOCIATE_RE),
          parser_re(ENDANY_RE,spec=False), parser_re(ENDBLK_RE), parser_re(ENDWHERE_RE), parser_re(ENDFORALL_RE)]
@@ -1183,7 +1186,7 @@ def add_whitespace_charwise(line, spacey, scope_parser, format_decl, filename, l
 
                 # add separating whitespace after closing delimiter
                 # with some exceptions:
-                # MODIFIED_01: Handle keyword THEN.
+                #--- MODIFIED_01: Handle keyword THEN.
                 if not re.search(r"^\s*(" + DEL_CLOSE_STR + r"|[,%:/\*])",
                                  line[pos + 1:], RE_FLAGS):
                     sep2 = 1 * spacey[8]
@@ -1583,11 +1586,11 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
 
                 lines = append_comments(lines, comment_lines, is_special)
             #--- MODIFIED_03: f_line is used to regenerate lines when impose_whitespace is True,
-            #                 so if impose_whitespace is False, impose_case would fail. Here's
-            #                 to ensure regeneration of lines even if impose_whitespace is False.
+            #---              so if impose_whitespace is False, impose_case would fail. Here's
+            #---              to ensure regeneration of lines even if impose_whitespace is False.
             else:
-                # Extract split_reformatted_line invocation from format_single_fline and apply
-                # the rest just as above to force regeneration of lines from f_line.
+                #--- Extract split_reformatted_line invocation from format_single_fline and apply
+                #--- the rest just as above to force regeneration of lines from f_line.
                 lines = split_reformatted_line(
                     f_line, linebreak_pos, ampersand_sep, f_line, orig_filename, stream.line_nr)
 
