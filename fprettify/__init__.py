@@ -1581,7 +1581,12 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             #                 so if impose_whitespace is False, impose_case would fail. Here's
             #                 to ensure regeneration of lines even if impose_whitespace is False.
             else:
-                lines = [f_line]
+                # Extract split_reformatted_line invocation from format_single_fline and apply
+                # the rest just as above to force regeneration of lines from f_line.
+                lines = split_reformatted_line(
+                    f_line, linebreak_pos, ampersand_sep, f_line, orig_filename, stream.line_nr)
+
+                lines = append_comments(lines, comment_lines, is_special)
 
             # target indent for next line
             rel_indent = req_indents[nfl] if nfl < len(req_indents) else 0
