@@ -1829,8 +1829,29 @@ def remove_pre_ampersands(lines, is_special, filename, line_nr):
 
     for pos, line in enumerate(lines):
         match = re.search(SOL_STR + r'(&\s*)', line)
+        #--- MODIFIED_05: Change logic to preserve number of whitespace characters
+        #--- before ampersand of previous line.
+        #>>> if match:
+        #>>>     pre_ampersand.append(match.group(1))
+        #>>>     # amount of whitespace before ampersand of previous line:
+        #>>>     m = re.search(r'(\s*)&[\s]*(?:!.*)?$', lines[pos - 1])
+        #>>>     if not m:
+        #>>>         raise FprettifyParseException(
+        #>>>             "Bad continuation line format", filename, line_nr)
+        #>>>     sep = len(m.group(1))
+        #>>> 
+        #>>>     ampersand_sep.append(sep)
+        #>>> else:
+        #>>>     pre_ampersand.append('')
+        #>>>     if pos > 0:
+        #>>>         # use default 1 whitespace character before ampersand
+        #>>>         ampersand_sep.append(1)
         if match:
             pre_ampersand.append(match.group(1))
+        else:
+            pre_ampersand.append('')
+
+        if pos > 0:
             # amount of whitespace before ampersand of previous line:
             m = re.search(r'(\s*)&[\s]*(?:!.*)?$', lines[pos - 1])
             if not m:
@@ -1839,11 +1860,6 @@ def remove_pre_ampersands(lines, is_special, filename, line_nr):
             sep = len(m.group(1))
 
             ampersand_sep.append(sep)
-        else:
-            pre_ampersand.append('')
-            if pos > 0:
-                # use default 1 whitespace character before ampersand
-                ampersand_sep.append(1)
 
     lines = [l.strip(' ').strip('&') if not s else l for l, s in zip(lines, is_special)]
     return [lines, pre_ampersand, ampersand_sep]
