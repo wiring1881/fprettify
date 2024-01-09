@@ -318,7 +318,8 @@ def build_scope_parser(fypp=True, mod=True):
 
     parser['continue'] = \
         [parser_re(ELSE_RE), None, parser_re(CASE_RE), parser_re(CONTAINS_RE),
-         parser_re(CONTAINS_RE),
+         #--- MODIFIED_04: Add None to 'continue' parser.
+         parser_re(CONTAINS_RE), None,
          None, parser_re(CONTAINS_RE), None, None,
          None, None, parser_re(ELSEWHERE_RE), None]
 
