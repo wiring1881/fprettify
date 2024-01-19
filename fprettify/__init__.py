@@ -143,7 +143,8 @@ ENDPROC_RE = re.compile(
 MOD_RE = re.compile(SOL_STR + r"MODULE\s+\w+" + EOL_STR, RE_FLAGS)
 ENDMOD_RE = re.compile(SOL_STR + r"END\s*MODULE(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
-SMOD_RE = re.compile(SOL_STR + r"SUBMODULE\s*\(\w+\)\s+\w+" + EOL_STR, RE_FLAGS)
+#--- MODIFIED_06: REGEX support (ancestor:parent) notation.
+SMOD_RE = re.compile(SOL_STR + r"SUBMODULE\s*\(\w+(:\w+)?\)\s+\w+" + EOL_STR, RE_FLAGS)
 ENDSMOD_RE = re.compile(SOL_STR + r"END\s*SUBMODULE(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
 TYPE_RE = re.compile(
