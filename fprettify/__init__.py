@@ -169,6 +169,12 @@ ENUM_RE = re.compile(
     RE_FLAGS)
 ENDENUM_RE = re.compile(SOL_STR + r"END\s*ENUM(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
+#--- MODIFIED: REGEX support enumeration type.
+ENUMERATION_RE = re.compile(
+    SOL_STR + r"ENUMERATION\s+TYPE(\s*,\s*(PUBLIC|PRIVATE))?(\s*::\s*|\s+)\w+" + EOL_STR,
+    RE_FLAGS)
+ENDENUMERATION_RE = re.compile(SOL_STR + r"END\s+ENUMERATION\s+TYPE(\s+\w+)?" + EOL_STR, RE_FLAGS)
+
 ENDANY_RE = re.compile(SOL_STR + r"END" + EOL_STR, RE_FLAGS)
 
 # Regular expressions for where and forall block constructs
@@ -314,21 +320,24 @@ def build_scope_parser(fypp=True, mod=True):
         [parser_re(IF_RE), parser_re(DO_RE), parser_re(SELCASE_RE), parser_re(SUBR_RE),
          #--- MODIFIED_04: Add MODPROC_RE to 'new' parser.
          parser_re(FCT_RE), parser_re(MODPROC_RE),
-         parser_re(INTERFACE_RE), parser_re(TYPE_RE), parser_re(ENUM_RE), parser_re(ASSOCIATE_RE),
+         #--- MODIFIED: Add ENUMERATION_RE to 'new' parser.
+         parser_re(INTERFACE_RE), parser_re(TYPE_RE), parser_re(ENUM_RE), parser_re(ENUMERATION_RE), parser_re(ASSOCIATE_RE),
          None, parser_re(BLK_RE), where_parser(WHERE_RE), forall_parser(FORALL_RE)]
 
     parser['continue'] = \
         [parser_re(ELSE_RE), None, parser_re(CASE_RE), parser_re(CONTAINS_RE),
-         #--- MODIFIED_04: Add None to 'continue' parser.
+         #--- MODIFIED_04: Add None of MODPROC_RE to 'continue' parser.
          parser_re(CONTAINS_RE), None,
-         None, parser_re(CONTAINS_RE), None, None,
+         #--- MODIFIED: Add None of ENUMERATION_RE to 'continue' parser.
+         None, parser_re(CONTAINS_RE), None, None, None,
          None, None, parser_re(ELSEWHERE_RE), None]
 
     parser['end'] = \
         [parser_re(ENDIF_RE), parser_re(ENDDO_RE), parser_re(ENDSEL_RE), parser_re(ENDSUBR_RE),
          #--- MODIFIED_04: Add ENDPROC_RE to 'end' parser.
          parser_re(ENDFCT_RE), parser_re(ENDPROC_RE),
-         parser_re(ENDINTERFACE_RE), parser_re(ENDTYPE_RE), parser_re(ENDENUM_RE), parser_re(ENDASSOCIATE_RE),
+         #--- MODIFIED: Add ENDENUMERATION_RE to 'end' parser.
+         parser_re(ENDINTERFACE_RE), parser_re(ENDTYPE_RE), parser_re(ENDENUM_RE), parser_re(ENDENUMERATION_RE), parser_re(ENDASSOCIATE_RE),
          parser_re(ENDANY_RE,spec=False), parser_re(ENDBLK_RE), parser_re(ENDWHERE_RE), parser_re(ENDFORALL_RE)]
 
     if mod:
@@ -374,6 +383,8 @@ F90_KEYWORDS_RE = re.compile(r"\b(" + "|".join((
     ## F2008.
     "contiguous", "submodule", "concurrent", "codimension",
     "sync all", "sync memory", "critical", "image_index",
+    ## F2023.
+    "enumeration",
     )) + r")\b", RE_FLAGS)
 
 ## Regexp whose first part matches F90 intrinsic procedures.
