@@ -326,8 +326,8 @@ def build_scope_parser(fypp=True, mod=True):
 
     parser['continue'] = \
         [parser_re(ELSE_RE), None, parser_re(CASE_RE), parser_re(CONTAINS_RE),
-         #--- MODIFIED_04: Add None of MODPROC_RE to 'continue' parser.
-         parser_re(CONTAINS_RE), None,
+         #--- MODIFIED_04: Add CONTAINS_RE of MODPROC_RE to 'continue' parser.
+         parser_re(CONTAINS_RE), parser_re(CONTAINS_RE),
          #--- MODIFIED: Add None of ENUMERATION_RE to 'continue' parser.
          None, parser_re(CONTAINS_RE), None, None, None,
          None, None, parser_re(ELSEWHERE_RE), None]
