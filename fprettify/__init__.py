@@ -169,7 +169,7 @@ ENUM_RE = re.compile(
     RE_FLAGS)
 ENDENUM_RE = re.compile(SOL_STR + r"END\s*ENUM(\s+\w+)?" + EOL_STR, RE_FLAGS)
 
-#--- MODIFIED: REGEX support enumeration type.
+#--- MODIFIED_07: REGEX support enumeration type.
 ENUMERATION_RE = re.compile(
     SOL_STR + r"ENUMERATION\s+TYPE(\s*,\s*(PUBLIC|PRIVATE))?(\s*::\s*|\s+)\w+" + EOL_STR,
     RE_FLAGS)
@@ -320,7 +320,7 @@ def build_scope_parser(fypp=True, mod=True):
         [parser_re(IF_RE), parser_re(DO_RE), parser_re(SELCASE_RE), parser_re(SUBR_RE),
          #--- MODIFIED_04: Add MODPROC_RE to 'new' parser.
          parser_re(FCT_RE), parser_re(MODPROC_RE),
-         #--- MODIFIED: Add ENUMERATION_RE to 'new' parser.
+         #--- MODIFIED_07: Add ENUMERATION_RE to 'new' parser.
          parser_re(INTERFACE_RE), parser_re(TYPE_RE), parser_re(ENUM_RE), parser_re(ENUMERATION_RE), parser_re(ASSOCIATE_RE),
          None, parser_re(BLK_RE), where_parser(WHERE_RE), forall_parser(FORALL_RE)]
 
@@ -328,7 +328,7 @@ def build_scope_parser(fypp=True, mod=True):
         [parser_re(ELSE_RE), None, parser_re(CASE_RE), parser_re(CONTAINS_RE),
          #--- MODIFIED_04: Add CONTAINS_RE of MODPROC_RE to 'continue' parser.
          parser_re(CONTAINS_RE), parser_re(CONTAINS_RE),
-         #--- MODIFIED: Add None of ENUMERATION_RE to 'continue' parser.
+         #--- MODIFIED_07: Add None of ENUMERATION_RE to 'continue' parser.
          None, parser_re(CONTAINS_RE), None, None, None,
          None, None, parser_re(ELSEWHERE_RE), None]
 
@@ -336,7 +336,7 @@ def build_scope_parser(fypp=True, mod=True):
         [parser_re(ENDIF_RE), parser_re(ENDDO_RE), parser_re(ENDSEL_RE), parser_re(ENDSUBR_RE),
          #--- MODIFIED_04: Add ENDPROC_RE to 'end' parser.
          parser_re(ENDFCT_RE), parser_re(ENDPROC_RE),
-         #--- MODIFIED: Add ENDENUMERATION_RE to 'end' parser.
+         #--- MODIFIED_07: Add ENDENUMERATION_RE to 'end' parser.
          parser_re(ENDINTERFACE_RE), parser_re(ENDTYPE_RE), parser_re(ENDENUM_RE), parser_re(ENDENUMERATION_RE), parser_re(ENDASSOCIATE_RE),
          parser_re(ENDANY_RE,spec=False), parser_re(ENDBLK_RE), parser_re(ENDWHERE_RE), parser_re(ENDFORALL_RE)]
 
@@ -1555,8 +1555,9 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         auto_align, auto_format, in_format_off_block = parse_fprettify_directives(
             lines, comment_lines, in_format_off_block, orig_filename, stream.line_nr)
 
+        #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
         lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
-            f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
+            f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
 
         if is_special[0]:
             indent_special = 3
@@ -1721,7 +1722,8 @@ def preprocess_labels(f_line, lines):
 
     return [f_line, lines, label]
 
-def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
+#--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
+def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
     prev_indent = False
@@ -1751,7 +1753,9 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
             is_blank = True
         lines = [l.strip(' ') if not is_special[n] else l for n, l in enumerate(lines)]
     else:
-        do_format = True
+        #--- MODIFIED_08: in_format_off_block test.
+        if not in_format_off_block:
+            do_format = True
 
     return [lines, do_format, prev_indent, is_blank, is_special]
 
