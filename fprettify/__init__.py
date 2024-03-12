@@ -1745,7 +1745,7 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
             #--- MODIFIED_08: Add in_format_off_block test and regard the line as speical.
             #>>>  is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
             is_special[pos] = FYPP_LINE_RE.search(line_strip) or \
-                              line_strip.startswith('!!') or is_format_off_block
+                              line_strip.startswith('!!') or in_format_off_block
 
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
