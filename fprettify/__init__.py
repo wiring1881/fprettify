@@ -1556,6 +1556,8 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             lines, comment_lines, in_format_off_block, orig_filename, stream.line_nr)
 
         #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
+        #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
+        #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
         lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
             f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
 
@@ -1723,6 +1725,7 @@ def preprocess_labels(f_line, lines):
     return [f_line, lines, label]
 
 #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
+#>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
 def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
@@ -1739,7 +1742,10 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
             is_special[pos] = line_strip.startswith('!!') or \
                               (FYPP_LINE_RE.search(line_strip) if pos > 0 else False)
         else:
-            is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
+            #--- MODIFIED_08: Add in_format_off_block test and regard the line as speical.
+            #>>>  is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
+            is_special[pos] = FYPP_LINE_RE.search(line_strip) or \
+                              line_strip.startswith('!!') or is_format_off_block
 
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
