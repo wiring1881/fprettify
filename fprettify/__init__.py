@@ -1562,7 +1562,7 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
         lines, do_format, prev_indent, is_blank, is_special, impose_case = preprocess_line(
-            f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
+            f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp, impose_case)
 
         if is_special[0]:
             indent_special = 3
@@ -1729,7 +1729,9 @@ def preprocess_labels(f_line, lines):
 
 #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
-def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp):
+#--- MODIFIED_09: Pass impose_case to check.
+#>>> def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp):
+def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp, impose_case):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
     prev_indent = False
@@ -1773,7 +1775,6 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
     #--- MODIFIED_09: Add impose_case return value.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
     return [lines, do_format, prev_indent, is_blank, is_special, impose_case]
-
 
 def pass_defaults_to_next_line(f_line):
     """defaults to be transferred from f_line to next line"""
