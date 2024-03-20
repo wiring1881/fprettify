@@ -1558,7 +1558,10 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
-        lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
+        #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
+        #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
+        #>>>     f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
+        lines, do_format, prev_indent, is_blank, is_special, impose_case = preprocess_line(
             f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
 
         if is_special[0]:
@@ -1747,6 +1750,10 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
             is_special[pos] = FYPP_LINE_RE.search(line_strip) or \
                               line_strip.startswith('!!') or in_format_off_block
 
+        #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
+        if FYPP_LINE_RE.search(line_strip):
+            impose_case = False
+
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
 
@@ -1763,7 +1770,9 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
         if not in_format_off_block:
             do_format = True
 
-    return [lines, do_format, prev_indent, is_blank, is_special]
+    #--- MODIFIED_09: Add impose_case return value.
+    #>>> return [lines, do_format, prev_indent, is_blank, is_special]
+    return [lines, do_format, prev_indent, is_blank, is_special, impose_case]
 
 
 def pass_defaults_to_next_line(f_line):
