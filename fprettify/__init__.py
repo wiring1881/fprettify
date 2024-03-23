@@ -1747,6 +1747,7 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     is_blank = False
     prev_indent = False
     do_format = False
+    is_fypp = False
 
     # is_special: special directives that should not be treated as Fortran
     # currently supported: fypp preprocessor directives or comments for FORD documentation
