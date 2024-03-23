@@ -1570,9 +1570,11 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block)
-        lines, do_format, prev_indent, is_blank, is_special, impose_case = preprocess_line(
-            f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, impose_case)
-
+        #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+        #>>> lines, do_format, prev_indent, is_blank, is_special, impose_case = preprocess_line(
+        #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, impose_case)
+        lines, do_format, prev_indent, is_blank, is_special, impose_case, nest = preprocess_line(
+            f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, impose_case, nest)
         if is_special[0]:
             indent_special = 3
 
@@ -1681,7 +1683,6 @@ def format_comments(lines, comments, strip_comments):
             comments_ftd.append(' ' * sep + comment.strip())
     return comments_ftd
 
-
 def parse_fprettify_directives(lines, comment_lines, in_format_off_block, filename, line_nr):
     """
     parse formatter directives '!&' and line continuations starting with an
@@ -1709,7 +1710,6 @@ def parse_fprettify_directives(lines, comment_lines, in_format_off_block, filena
                 FORMATTER_ERROR_MESSAGE, filename, line_nr)
 
     return [auto_align, auto_format, in_format_off_block]
-
 
 def preprocess_omp(f_line, lines):
     """convert omp conditional to normal fortran"""
@@ -1740,7 +1740,9 @@ def preprocess_labels(f_line, lines):
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
 #--- MODIFIED_09: Pass impose_case to check.
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block):
-def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block, impose_case):
+#--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+#>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block, impose_case):
+def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block, impose_case, nest):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
     prev_indent = False
@@ -1815,7 +1817,9 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
 
     #--- MODIFIED_09: Add impose_case return value.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
-    return [lines, do_format, prev_indent, is_blank, is_special, impose_case]
+    #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+    #>>> return [lines, do_format, prev_indent, is_blank, is_special, impose_case]
+    return [lines, do_format, prev_indent, is_blank, is_special, impose_case, nest]
 
 def pass_defaults_to_next_line(f_line):
     """defaults to be transferred from f_line to next line"""
