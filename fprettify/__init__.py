@@ -1756,10 +1756,15 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     for pos, line in enumerate(lines):
         line_strip = line.lstrip()
         if indent_fypp:
-            is_special[pos] = line_strip.startswith('!!') or \
+            #--- MODIFIED_11: Add '!>' support.
+            #>>> is_special[pos] = line_strip.startswith('!!') or \
+            is_special[pos] = line_strip.startswith('!!') or line_strip.startswith('!>') or \
                               (FYPP_LINE_RE.search(line_strip) if pos > 0 else False)
         else:
-            is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
+            #--- MODIFIED_11: Add '!>' support.
+            #>>> is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
+            is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!') or \
+                              line_strip.startswith('!>')
 
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
