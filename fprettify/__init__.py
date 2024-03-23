@@ -1532,6 +1532,15 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
     skip_blank = False
     in_format_off_block = False
 
+    #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+    # nest[0]: #:if / #:endif
+    # nest[1]: #:for / #:endfor
+    # nest[2]: #:def / #:enddef
+    # nest[3]: #:call / #:endcall
+    # nest[4]: #:mute / #:endmute
+    # nest[5]: #:block / #:endblock
+    nest = [0, 0, 0, 0, 0, 0]
+
     while 1:
         f_line, comments, lines = stream.next_fortran_line()
 
@@ -1560,9 +1569,9 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
         #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
-        #>>>     f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp)
+        #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block)
         lines, do_format, prev_indent, is_blank, is_special, impose_case = preprocess_line(
-            f_line, lines, comments, in_format_off_block, orig_filename, stream.line_nr, indent_fypp, impose_case)
+            f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, impose_case)
 
         if is_special[0]:
             indent_special = 3
@@ -1730,8 +1739,8 @@ def preprocess_labels(f_line, lines):
 #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
 #--- MODIFIED_09: Pass impose_case to check.
-#>>> def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp):
-def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line_nr, indent_fypp, impose_case):
+#>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block):
+def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block, impose_case):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
     prev_indent = False
@@ -1747,17 +1756,46 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
             is_special[pos] = line_strip.startswith('!!') or \
                               (FYPP_LINE_RE.search(line_strip) if pos > 0 else False)
         else:
-            #--- MODIFIED_08: Add in_format_off_block test and regard the line as speical.
-            #>>>  is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
-            is_special[pos] = FYPP_LINE_RE.search(line_strip) or \
-                              line_strip.startswith('!!') or in_format_off_block
-
-        #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
-        if FYPP_LINE_RE.search(line_strip):
-            impose_case = False
+            is_special[pos] = FYPP_LINE_RE.search(line_strip) or line_strip.startswith('!!')
 
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
+
+    #--- MODIFIED_09: Set impose_case to False if fypp directives detected.
+    #>>> lines0_strip = lines[0].lstrip()
+    #>>> if FYPP_LINE_RE.search(lines0_strip):
+    #>>>     impose_case = False
+    #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+    lines0_strip = lines[0].lstrip()
+    if FYPP_LINE_RE.search(lines0_strip):
+        is_fypp = True
+        impose_case = False
+
+        if re.search(r"^#:if", lines0_strip):
+            nest[0] += 1
+        elif re.search(r"^#:endif", lines0_strip):
+            nest[0] -= 1
+        elif re.search(r"^#:for", lines0_strip):
+            nest[1] += 1
+        elif re.search(r"^#:endfor", lines0_strip):
+            nest[1] -= 1
+        elif re.search(r"^#:def", lines0_strip):
+            nest[2] += 1
+        elif re.search(r"^#:enddef", lines0_strip):
+            nest[2] -= 1
+        elif re.search(r"^#:call", lines0_strip):
+            nest[3] += 1
+        elif re.search(r"^#:endcall", lines0_strip):
+            nest[3] -= 1
+        elif re.search(r"^#:mute", lines0_strip):
+            nest[4] += 1
+        elif re.search(r"^#:endmute", lines0_strip):
+            nest[4] -= 1
+        elif re.search(r"^#:block", lines0_strip):
+            nest[5] += 1
+        elif re.search(r"^#:endblock", lines[0]):
+            nest[5] -= 1
+    in_fypp_block = False if all(_ == 0 for _ in nest) else True
 
     if EMPTY_RE.search(f_line):  # empty lines including comment lines
         if any(comments):
@@ -1771,6 +1809,9 @@ def preprocess_line(f_line, lines, comments, in_format_off_block, filename, line
         #--- MODIFIED_08: in_format_off_block test.
         if not in_format_off_block:
             do_format = True
+            #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
+            if in_fypp_block and not is_fypp:
+                do_format = False
 
     #--- MODIFIED_09: Add impose_case return value.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
