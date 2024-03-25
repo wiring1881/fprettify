@@ -243,11 +243,17 @@ DEL_CLOSE_RE = re.compile(r"^" + DEL_CLOSE_STR, RE_FLAGS)
 EMPTY_RE = re.compile(SOL_STR + r"$", RE_FLAGS)
 
 PREPRO_NEW_SCOPE = [parser_re(FYPP_DEF_RE), parser_re(FYPP_IF_RE), parser_re(FYPP_FOR_RE),
-                       parser_re(FYPP_BLOCK_RE), parser_re(FYPP_CALL_RE), parser_re(FYPP_MUTE_RE)]
-PREPRO_CONTINUE_SCOPE = [None, parser_re(FYPP_ELIF_ELSE_RE), None, None, None, None]
+#--- MODIFIED_12: Don't indent mute/endmute block.
+#>>>                        parser_re(FYPP_BLOCK_RE), parser_re(FYPP_CALL_RE), parser_re(FYPP_MUTE_RE)]                    
+                       parser_re(FYPP_BLOCK_RE), parser_re(FYPP_CALL_RE)]
+#--- MODIFIED_12: Don't indent mute/endmute block.
+#>>> PREPRO_CONTINUE_SCOPE = [None, parser_re(FYPP_ELIF_ELSE_RE), None, None, None, None]
+PREPRO_CONTINUE_SCOPE = [None, parser_re(FYPP_ELIF_ELSE_RE), None, None, None]
 PREPRO_END_SCOPE = [parser_re(FYPP_ENDDEF_RE), parser_re(FYPP_ENDIF_RE), parser_re(FYPP_ENDFOR_RE),
-                       parser_re(FYPP_ENDBLOCK_RE), parser_re(FYPP_ENDCALL_RE),
-                       parser_re(FYPP_ENDMUTE_RE)]
+#--- MODIFIED_12: Don't indent mute/endmute block.
+#>>>                        parser_re(FYPP_ENDBLOCK_RE), parser_re(FYPP_ENDCALL_RE),
+#>>>                        parser_re(FYPP_ENDMUTE_RE)]
+                       parser_re(FYPP_ENDBLOCK_RE), parser_re(FYPP_ENDCALL_RE)]
 
 class plusminus_parser(parser_re):
     """parser for +/- in addition
@@ -1533,13 +1539,12 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
     in_format_off_block = False
 
     #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
-    # nest[0]: #:if / #:endif
-    # nest[1]: #:for / #:endfor
-    # nest[2]: #:def / #:enddef
-    # nest[3]: #:call / #:endcall
-    # nest[4]: #:mute / #:endmute
-    # nest[5]: #:block / #:endblock
-    nest = [0, 0, 0, 0, 0, 0]
+    # nest[0]: #:def / #:enddef
+    # nest[1]: #:if / #:endif
+    # nest[2]: #:for / #:endfor
+    # nest[3]: #:block / #:endblock
+    # nest[4]: #:call / #:endcall
+    nest = [0, 0, 0, 0, 0]
 
     while 1:
         f_line, comments, lines = stream.next_fortran_line()
@@ -1779,30 +1784,26 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
         is_fypp = True
         impose_case = False
 
-        if re.search(r"^#:if", lines0_strip):
+        if re.search(r"^#:def", lines0_strip):
             nest[0] += 1
-        elif re.search(r"^#:endif", lines0_strip):
-            nest[0] -= 1
-        elif re.search(r"^#:for", lines0_strip):
-            nest[1] += 1
-        elif re.search(r"^#:endfor", lines0_strip):
-            nest[1] -= 1
-        elif re.search(r"^#:def", lines0_strip):
-            nest[2] += 1
         elif re.search(r"^#:enddef", lines0_strip):
+            nest[0] -= 1
+        elif re.search(r"^#:if", lines0_strip):
+            nest[1] += 1
+        elif re.search(r"^#:endif", lines0_strip):
+            nest[1] -= 1
+        elif re.search(r"^#:for", lines0_strip):
+            nest[2] += 1
+        elif re.search(r"^#:endfor", lines0_strip):
             nest[2] -= 1
-        elif re.search(r"^#:call", lines0_strip):
-            nest[3] += 1
-        elif re.search(r"^#:endcall", lines0_strip):
-            nest[3] -= 1
-        elif re.search(r"^#:mute", lines0_strip):
-            nest[4] += 1
-        elif re.search(r"^#:endmute", lines0_strip):
-            nest[4] -= 1
         elif re.search(r"^#:block", lines0_strip):
-            nest[5] += 1
+            nest[3] += 1
         elif re.search(r"^#:endblock", lines[0]):
-            nest[5] -= 1
+            nest[3] -= 1
+        elif re.search(r"^#:call", lines0_strip):
+            nest[4] += 1
+        elif re.search(r"^#:endcall", lines0_strip):
+            nest[4] -= 1
     in_fypp_block = False if all(_ == 0 for _ in nest) else True
 
     if EMPTY_RE.search(f_line):  # empty lines including comment lines
