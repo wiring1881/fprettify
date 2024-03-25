@@ -93,8 +93,8 @@ class CharFilter(object):
     """
 
     def __init__(self, string, filter_comments=True, filter_strings=True,
-    #--- MODIFILED_12: Set filter_fypp to False so that fypp directive lines can be sepaerated correctly.
-    #>>>               filter_fypp=True):
+    #--- MODIFIED_01: Set filter_fypp to False so that fypp directive lines can be sepaerated correctly.
+    #>>>              filter_fypp=True):
                filter_fypp=False):
         self._content = string
         self._it = enumerate(self._content)
@@ -111,8 +111,8 @@ class CharFilter(object):
 
 
     def update(self, string, filter_comments=True, filter_strings=True,
-    #--- MODIFILED_12: Set filter_fypp to False so that fypp directive lines can be sepaerated correctly.
-    #>>>               filter_fypp=True):
+    #--- MODIFIED_01: Set filter_fypp to False so that fypp directive lines can be sepaerated correctly.
+    #>>>              filter_fypp=True):
                filter_fypp=False):
         self._content = string
         self._it = enumerate(self._content)
