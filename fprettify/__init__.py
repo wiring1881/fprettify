@@ -1781,7 +1781,10 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     #--- MODIFIED_10: Immune indentation for code within nested fypp directive.
     lines0_strip = lines[0].lstrip()
     if FYPP_LINE_RE.search(lines0_strip):
-        is_fypp = True
+        #--- MODIFIED_13: Don't indent fypp call directive.
+        #>>> is_fypp = True
+        if not re.search(r"^(@:|@{)", lines0_strip):
+            is_fypp = True
         impose_case = False
 
         if re.search(r"^#:def", lines0_strip):
