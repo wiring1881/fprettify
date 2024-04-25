@@ -1569,6 +1569,10 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         auto_align, auto_format, in_format_off_block = parse_fprettify_directives(
             lines, comment_lines, in_format_off_block, orig_filename, stream.line_nr)
 
+        #--- MODIFIED_14: Set impose_case to False if auto_format is False.
+        if not auto_format:
+            impose_case = False
+
         #--- MODIFIED_08: Add in_format_off_block test to skip auto formatting.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
