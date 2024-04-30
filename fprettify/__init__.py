@@ -1762,7 +1762,7 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     prev_indent = False
     do_format = False
     is_fypp = False
-    fypp_eval_call = False
+    fypp_control = False
 
     # is_special: special directives that should not be treated as Fortran
     # currently supported: fypp preprocessor directives or comments for FORD documentation
@@ -1790,8 +1790,8 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
         is_fypp = True
 
         #--- MODIFIED_13: Test if it is fypp control directive.
-        if re.search(r"^(\$:|\${|@:|@{)", lines0_strip):
-            fypp_eval_call = True
+        if re.search(r"^(#:|#{)", lines0_strip):
+            fypp_control = True
 
         #--- MODIFIED_10: Calculate nest array.
         if re.search(r"^#:def", lines0_strip):
@@ -1832,7 +1832,7 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
         if not in_format_off_block:
             do_format = True
             #--- MODIFIED_10: Disable do_format for $@ directives if in_fypp_block.
-            if in_fypp_block and fypp_eval_call:
+            if in_fypp_block and not fypp_control:
                 do_format = False
 
     #--- MODIFIED_10: Return "nest" to determine indentation for code within nested fypp directives.
