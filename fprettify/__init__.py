@@ -1586,12 +1586,6 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block)
         lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp = preprocess_line(
             f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, nest)
-        print("lines = ", lines)
-        print("f_line = ", f_line)
-        print("is_special = ", is_special)
-        print("in_format_off_block = ", in_format_off_block)
-        print("auto_format = ", auto_format)
-        print("--------------------------")
 
         if is_special[0]:
             indent_special = 3
@@ -1672,11 +1666,6 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             if indent[0] < len(label):
                 indent = [ind + len(label) - indent[0] for ind in indent]
 
-        print("indent = ", indent)
-        print("lines = ", lines)
-        print("orig_lines = ", orig_lines)
-        print("indent_special = ", indent_special)
-        print("======================")
         write_formatted_line(outfile, indent, lines, orig_lines, indent_special, llength,
                              use_same_line, is_omp_conditional, label, orig_filename, stream.line_nr)
 
@@ -1829,9 +1818,6 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     #--- MODIFIED_10: Determines whether in_fypp_block.
     in_fypp_block = False if all(_ == 0 for _ in nest) else True
 
-    print("lines = ", lines)
-    print("f_line = ", f_line)
-    print("comments = ", comments)
     if EMPTY_RE.search(f_line):  # empty lines including comment lines
         if any(comments):
             if lines[0].startswith(' ') and not OMP_DIR_RE.search(lines[0]):
@@ -1847,16 +1833,8 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
             do_format = True
             #--- MODIFIED_10: Disable do_format for $@ directives if in_fypp_block.
             if in_fypp_block and fypp_eval_call:
-                print("do_format1 = ", do_format)
                 do_format = False
 
-    print("prev_indent = ", prev_indent)
-    print("is_blank = ", is_blank)
-    print("nest = ", nest)
-    print("is_fypp = ", is_fypp)
-    print("do_format2 = ", do_format)
-    print("in_fypp_block = ", in_fypp_block)
-    print("fypp_eval_call = ", fypp_eval_call)
     #--- MODIFIED_10: Return "nest" to determine indentation for code within nested fypp directives.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
     #--- MODIFIED_14: Return "is_fypp" to determine case.
