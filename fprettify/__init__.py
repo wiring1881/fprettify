@@ -1018,7 +1018,8 @@ def replace_keywords_single_fline(f_line, case_dict, auto_format):
     for pos, part in enumerate(line_parts):
         # exclude comments, strings:
         if part.strip() and not STR_OPEN_RE.match(part):
-            #--- MODIFIED_14: Don't impose case for exception keywords if auto_format is False.
+            #--- MODIFIED_14: If auto_format is False, keywords within
+            #---              EXCEPTION_KEYWORDS_RE are NOT imposed.
             if not auto_format and EXCEPTION_KEYWORDS_RE.match(part):
                 continue
 
@@ -1578,13 +1579,14 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         auto_align, auto_format, in_format_off_block = parse_fprettify_directives(
             lines, comment_lines, in_format_off_block, orig_filename, stream.line_nr)
 
-        #--- MODIFIED_08: Add "in_format_off_block" argument to determine whether to disable auto_format.
+        #--- MODIFIED_08: Add "in_format_off_block" argument to determine whether to disable do_format.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp)
-        #--- MODIFIED_10: Add and return "nest" argument to record pairable fypp directive status.
+        #--- MODIFIED_10: Add and return "nest" argument to record pairable fypp directives status.
+        #---              Return is_fypp_line for futher use.
         #>>> lines, do_format, prev_indent, is_blank, is_special = preprocess_line(
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block)
-        lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp = preprocess_line(
+        lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp_line = preprocess_line(
             f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, nest)
 
         if is_special[0]:
@@ -1620,8 +1622,9 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
 
             #--- MODIFIED_14: Don't impose case for fypp lines.
             #>>> if impose_case:
-            if impose_case and not is_fypp:
-                #--- MODIFIED_14: Impose case according to auto_format status.
+            if impose_case and not is_fypp_line:
+                #--- MODIFIED_14: Add auto_format and if it is False, keywords within
+                #                 EXCEPTION_KEYWORDS_RE are NOT imposed.
                 #>>> f_line = replace_keywords_single_fline(f_line, case_dict)
                 f_line = replace_keywords_single_fline(f_line, case_dict, auto_format)
 
@@ -1752,17 +1755,21 @@ def preprocess_labels(f_line, lines):
 
     return [f_line, lines, label]
 
-#--- MODIFIED_08: Add "in_format_off_block" argument to determine whether to disable auto_format.
+#--- MODIFIED_08: Add "in_format_off_block" argument to determine whether to disable do_format.
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp):
 #--- MODIFIED_10: Add and return "nest" argument to record pairable fypp directive status.
+#---              Return is_fypp_line for futher use.
 #>>> def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block):
 def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_format_off_block, nest):
     """preprocess lines: identification and formatting of special cases"""
     is_blank = False
     prev_indent = False
     do_format = False
-    is_fypp = False
-    fypp_control = False
+
+    #--- MODIFIED_10: is_fypp_line defaults to False.
+    is_fypp_line = False
+    #--- MODIFIED_13: Test if it is_fypp_ctl_line.
+    is_fypp_ctl_line = False
 
     # is_special: special directives that should not be treated as Fortran
     # currently supported: fypp preprocessor directives or comments for FORD documentation
@@ -1784,39 +1791,42 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     # if first line is special, all lines should be special
     if is_special[0]: is_special = [True]*len(lines)
 
-    #--- MODIFIED_10: Test if it is_fypp.
+    #--- MODIFIED_10: Test if it is_fypp_line.
     lines0_strip = lines[0].lstrip()
     if FYPP_LINE_RE.search(lines0_strip):
-        is_fypp = True
+        is_fypp_line = True
 
-        #--- MODIFIED_13: Test if it is fypp control directive.
-        if re.search(r"^(#:|#{)", lines0_strip):
-            fypp_control = True
+        #--- MODIFIED_13: Test if it is_fypp_ctl_line.
+        if re.search(r"^#:", lines0_strip):
+            is_fypp_ctl_line = True
 
-        #--- MODIFIED_10: Calculate nest array.
-        if re.search(r"^#:def", lines0_strip):
-            nest[0] += 1
-        elif re.search(r"^#:enddef", lines0_strip):
-            nest[0] -= 1
-        elif re.search(r"^#:if", lines0_strip):
-            nest[1] += 1
-        elif re.search(r"^#:endif", lines0_strip):
-            nest[1] -= 1
-        elif re.search(r"^#:for", lines0_strip):
-            nest[2] += 1
-        elif re.search(r"^#:endfor", lines0_strip):
-            nest[2] -= 1
-        elif re.search(r"^#:block", lines0_strip):
-            nest[3] += 1
-        elif re.search(r"^#:endblock", lines[0]):
-            nest[3] -= 1
-        elif re.search(r"^#:call", lines0_strip):
-            nest[4] += 1
-        elif re.search(r"^#:endcall", lines0_strip):
-            nest[4] -= 1
+            #--- MODIFIED_10: Calculate fypp block record.
+            if re.search(r"^#:def", lines0_strip):
+                nest[0] += 1
+            elif re.search(r"^#:enddef", lines0_strip):
+                nest[0] -= 1
+            elif re.search(r"^#:if", lines0_strip):
+                nest[1] += 1
+            elif re.search(r"^#:endif", lines0_strip):
+                nest[1] -= 1
+            elif re.search(r"^#:for", lines0_strip):
+                nest[2] += 1
+            elif re.search(r"^#:endfor", lines0_strip):
+                nest[2] -= 1
+            elif re.search(r"^#:block", lines0_strip):
+                nest[3] += 1
+            elif re.search(r"^#:endblock", lines0_strip):
+                nest[3] -= 1
+            elif re.search(r"^#:call", lines0_strip):
+                nest[4] += 1
+            elif re.search(r"^#:endcall", lines0_strip):
+                nest[4] -= 1
 
-    #--- MODIFIED_10: Determines whether in_fypp_block.
-    in_fypp_block = False if all(_ == 0 for _ in nest) else True
+    #--- MODIFIED_10: Determines whether it is code_in_fypp_block, codes are as follows:
+    #                 (1) pure Fortran code;
+    #                 (2) line form of eval and call directives;
+    #                 (3) Fortran code mixed with inline form of all fypp directives.
+    code_in_fypp_block = True if any(_ != 0 for _ in nest) and not is_fypp_ctl_line else False
 
     if EMPTY_RE.search(f_line):  # empty lines including comment lines
         if any(comments):
@@ -1827,19 +1837,20 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
             is_blank = True
         lines = [l.strip(' ') if not is_special[n] else l for n, l in enumerate(lines)]
     else:
-        #--- MODIFIED_08: do_format if we're not in_format_off_block.
+        #--- MODIFIED_08: do_format except in_format_off_block.
         #>>> do_format = True
         if not in_format_off_block:
             do_format = True
-            #--- MODIFIED_10: Disable do_format for $@ directives if in_fypp_block.
-            if in_fypp_block and not fypp_control:
-                do_format = False
+
+            #--- MODIFIED_10: Disable do_format if code_in_fypp_block.
+            if code_in_fypp_block:
+               do_format = False
 
     #--- MODIFIED_10: Return "nest" to determine indentation for code within nested fypp directives.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
-    #--- MODIFIED_14: Return "is_fypp" to determine case.
+    #--- MODIFIED_14: Return "is_fypp_line" to determine case.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special, nest]
-    return [lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp]
+    return [lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp_line]
 
 def pass_defaults_to_next_line(f_line):
     """defaults to be transferred from f_line to next line"""
