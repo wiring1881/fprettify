@@ -393,11 +393,6 @@ F90_KEYWORDS_RE = re.compile(r"\b(" + "|".join((
     "enumeration",
     )) + r")\b", RE_FLAGS)
 
-#--- MODIFIED_14: Case of keywords below won't be imposed if auto_format is False.
-EXCEPTION_KEYWORDS_RE = re.compile(r"\b(" + "|".join((
-    "value", "contains"
-    )) + r")\b", RE_FLAGS)
-
 ## Regexp whose first part matches F90 intrinsic procedures.
 ## Add a parenthesis to avoid catching non-procedures.
 F90_PROCEDURES_RE = re.compile(r"\b(" + "|".join((
@@ -978,7 +973,7 @@ def replace_relational_single_fline(f_line, cstyle):
     return new_line
 
 
-def replace_keywords_single_fline(f_line, case_dict, auto_format):
+def replace_keywords_single_fline(f_line, case_dict):
     """
     format a single Fortran line - change case of keywords
     """
@@ -1015,15 +1010,30 @@ def replace_keywords_single_fline(f_line, case_dict, auto_format):
     swapcase = lambda s, a: s if a==0 else (s.lower() if a==1 else s.upper())
 
     nbparts = len(line_parts)
+    print("f_line = ", f_line)
+    print("line_parts = ", line_parts)
     for pos, part in enumerate(line_parts):
         # exclude comments, strings:
         if part.strip() and not STR_OPEN_RE.match(part):
-            #--- MODIFIED_14: If auto_format is False, keywords within
-            #---              EXCEPTION_KEYWORDS_RE are NOT imposed.
-            if not auto_format and EXCEPTION_KEYWORDS_RE.match(part):
-                continue
-
             if F90_KEYWORDS_RE.match(part):
+                #--- MODIFIED_14: Handles special keywords.
+                #>>> part = swapcase(part, case_dict['keywords'])
+                sline = ''.join(line_parts[:pos + 1])
+                print("sline = ", sline)
+                #--- MODIFIED_14: For keyword "type".
+                if part == "type":
+                    if (not re.match(r"^\s*(END\s+)?" + part, sline) or
+                        line_parts[pos+1:].count('=') == 1):
+                        continue
+                #--- MODIFIED_14: For keyword "contains".
+                elif part == "contains":
+                    if not re.match(r"^\s*" + part, sline):
+                        continue
+                #--- MODIFIED_14: For keyword "value".
+                elif part == "value":
+                    if line_parts[pos+1:].count(':') != 2:
+                        continue
+
                 part = swapcase(part, case_dict['keywords'])
             elif F90_MODULES_RE.match(part):
                 part = swapcase(part, case_dict['procedures'])
@@ -1588,6 +1598,12 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         #>>>     f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block)
         lines, do_format, prev_indent, is_blank, is_special, nest, is_fypp_line = preprocess_line(
             f_line, lines, comments, orig_filename, stream.line_nr, indent_fypp, in_format_off_block, nest)
+        print("lines(prepared) = ", lines)
+        print("f_line(prepared) = >", f_line, '<')
+        print("is_special = ", is_special)
+        print("in_format_off_block = ", in_format_off_block)
+        print("auto_format = ", auto_format)
+        print("--------------------------")
 
         if is_special[0]:
             indent_special = 3
@@ -1603,6 +1619,24 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
                 indent[:] = [indenter.get_fline_indent()]*len(indent)
             elif indent_special == 0:
                 indent_special = 1
+
+            #--- MODIFIED_14: Impose case where do_format is False.
+            if impose_case and not is_fypp_line:
+                f_line = replace_keywords_single_fline(f_line, case_dict)
+
+                #--- MODIFIED_14: Regenerate lines from f_line.
+                fline = f_line
+                for pos, line in enumerate(lines):
+                    if comments[0]:
+                        line = re.sub(re.escape(comments[0]), '', line)
+
+                    tokens = line.strip()
+                    if tokens:
+                        if tokens[-1] == '&':
+                            tokens = tokens[0:-1]
+
+                        lines[pos] = re.sub(re.escape(tokens), fline[0:len(tokens)], lines[pos])
+                        fline = fline[len(tokens):]
         else:
 
             if not auto_align:
@@ -1620,13 +1654,11 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             if impose_replacements:
                 f_line = replace_relational_single_fline(f_line, cstyle)
 
+            print("impose_case = ", impose_case)
             #--- MODIFIED_14: Don't impose case for fypp lines.
             #>>> if impose_case:
             if impose_case and not is_fypp_line:
-                #--- MODIFIED_14: Add auto_format and if it is False, keywords within
-                #                 EXCEPTION_KEYWORDS_RE are NOT imposed.
-                #>>> f_line = replace_keywords_single_fline(f_line, case_dict)
-                f_line = replace_keywords_single_fline(f_line, case_dict, auto_format)
+                f_line = replace_keywords_single_fline(f_line, case_dict)
 
             if impose_whitespace:
                 lines = format_single_fline(
@@ -1656,6 +1688,9 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
 
             lines, indent = prepend_ampersands(lines, indent, pre_ampersand)
 
+        print("lines(result) = ", lines)
+        print("f_line(result) = >", f_line, '<')
+
         if any(is_special):
             for pos, line in enumerate(lines):
                 if is_special[pos]:
@@ -1669,6 +1704,11 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             if indent[0] < len(label):
                 indent = [ind + len(label) - indent[0] for ind in indent]
 
+        print("indent = ", indent)
+        print("lines = ", lines)
+        print("orig_lines = ", orig_lines)
+        print("indent_special = ", indent_special)
+        print("======================")
         write_formatted_line(outfile, indent, lines, orig_lines, indent_special, llength,
                              use_same_line, is_omp_conditional, label, orig_filename, stream.line_nr)
 
@@ -1828,6 +1868,9 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
     #                 (3) Fortran code mixed with inline form of all fypp directives.
     code_in_fypp_block = True if any(_ != 0 for _ in nest) and not is_fypp_ctl_line else False
 
+    print("lines = ", lines)
+    print("f_line = ", f_line)
+    print("comments = ", comments)
     if EMPTY_RE.search(f_line):  # empty lines including comment lines
         if any(comments):
             if lines[0].startswith(' ') and not OMP_DIR_RE.search(lines[0]):
@@ -1844,8 +1887,16 @@ def preprocess_line(f_line, lines, comments, filename, line_nr, indent_fypp, in_
 
             #--- MODIFIED_10: Disable do_format if code_in_fypp_block.
             if code_in_fypp_block:
+               print("do_format1 = ", do_format)
                do_format = False
 
+    print("prev_indent = ", prev_indent)
+    print("is_blank = ", is_blank)
+    print("nest = ", nest)
+    print("is_fypp_line = ", is_fypp_line)
+    print("is_fypp_ctl_line = ", is_fypp_ctl_line)
+    print("do_format2 = ", do_format)
+    print("code_in_fypp_block = ", code_in_fypp_block)
     #--- MODIFIED_10: Return "nest" to determine indentation for code within nested fypp directives.
     #>>> return [lines, do_format, prev_indent, is_blank, is_special]
     #--- MODIFIED_14: Return "is_fypp_line" to determine case.
