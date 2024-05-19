@@ -571,6 +571,9 @@ class F90Indenter(object):
                               indents for continuations
         """
 
+        print("rel_ind = ", rel_ind)
+        print("rel_ind_con = ", rel_ind_con)
+
         if (self._initial and
             (PROG_RE.match(f_line) or MOD_RE.match(f_line))):
             self._indent_storage[-1] = 0
@@ -653,16 +656,20 @@ class F90Indenter(object):
                         if len(scopes) > 0:
                             what = scopes.pop()
 
+        print("line_indents1(F90Indenter) = ", line_indents)
         # deal with line breaks
         if not manual_lines_indent:
+            print("br_indent_list1(F90Indenter) = ", br_indent_list)
             self._aligner.process_lines_of_fline(
                 f_line, lines, rel_ind_con, line_nr)
             br_indent_list = self._aligner.get_lines_indent()
+            print("br_indent_list2(F90Indenter) = ", br_indent_list)
         else:
             br_indent_list = manual_lines_indent
 
         for pos in range(0, len(lines) - 1):
             line_indents[pos + 1] = br_indent_list[pos + 1]
+        print("line_indents2(F90Indenter) = ", line_indents)
 
         if is_new and not is_end:
             if not valid_new:
@@ -693,6 +700,7 @@ class F90Indenter(object):
 
         else:
             line_indents = [ind + indents[-1] for ind in line_indents]
+        print("line_indents3(F90Indenter) = ", line_indents)
 
         # we have processed first line:
         self._initial = False
@@ -754,10 +762,13 @@ class F90Aligner(object):
         is_decl = VAR_DECL_RE.search(f_line) or PUBLIC_RE.search(f_line) or PRIVATE_RE.match(f_line)
         is_use = USE_RE.search(f_line)
         for pos, line in enumerate(lines):
+            print("_br_indent_list1(F90Aligner) = ", self._br_indent_list)
             self.__align_line_continuations(
                 line, is_decl, is_use, rel_ind, self._line_nr + pos)
+            print("_br_indent_list2(F90Aligner) = ", self._br_indent_list)
             if pos + 1 < len(lines):
                 self._line_indents.append(self._br_indent_list[-1])
+            print("_line_indents(F90Aligner) = ", self._line_indents)
 
         if len(self._br_indent_list) > 2 or self._level:
             log_message('unpaired bracket delimiters',
@@ -787,12 +798,22 @@ class F90Aligner(object):
 
         end_of_delim = -1
 
+        print("is_decl = ", is_decl)
+        print("is_use = ", is_use)
+        print("line = ", line)
+        print("indent_size = ", indent_size)
+        print("line_nr = ", line_nr)
+        print("level = ", level)
+        print("indent_list1(F90Aligner Core) = ", indent_list)
         for pos, char in CharFilter(line):
+            print("pos, char = ", pos, char)
 
+            print("indent_list2(F90Aligner Core) = ", indent_list)
             what_del_open = None
             what_del_close = None
             if pos > end_of_delim:
                 [what_del_open, what_del_close] = get_curr_delim(line, pos)
+            print("indent_list3(F90Aligner Core) = ", indent_list)
 
             if what_del_open:
                 what_del_open = what_del_open.group()
@@ -801,6 +822,7 @@ class F90Aligner(object):
                 indent_list.append(pos + len(what_del_open) + rel_ind)
                 pos_ldelim.append(pos)
                 ldelim.append(what_del_open)
+            print("indent_list4(F90Aligner Core) = ", indent_list)
             if what_del_close:
                 what_del_close = what_del_close.group()
                 end_of_delim = pos + len(what_del_close) - 1
@@ -828,14 +850,20 @@ class F90Aligner(object):
                 else:
                     pos_rdelim.append(pos)
                     rdelim.append(what_del_close)
+            print("indent_list5(F90Aligner Core) = ", indent_list)
             if char == ',' and not level and pos_eq > 0:
-                # a top level comma removes previous alignment position.
-                # (see issue #11)
-                pos_eq = 0
-                indent_list.pop()
+                #--- MODIFIED_16: Don't know what it's used for, Add condition
+                #---              to skip to align generic TBPs.
+                if not re.search(r"generic", line, RE_FLAGS):
+                    # a top level comma removes previous alignment position.
+                    # (see issue #11)
+                    pos_eq = 0
+                    indent_list.pop()
+            print("indent_list6(F90Aligner Core) = ", indent_list)
             if not level and not is_decl and char == '=' and not REL_OP_RE.search(
                     line[max(0, pos - 1):min(pos + 2, len(line))]):
                         # should only have one assignment per line!
+                print("in is_pointer")
                 if pos_eq > 0:
                     raise FprettifyInternalException(
                             "found more than one assignment in the same Fortran line", filename, line_nr)
@@ -848,9 +876,14 @@ class F90Aligner(object):
                     indent_list.append(
                         pos_eq + 1 + is_pointer + indent_list[-1])
             elif is_decl and line[pos:pos + 2] == '::' and not re.search(r"::\s*" + LINEBREAK_STR, line, RE_FLAGS):
+                print("in is_decl")
                 indent_list.append(pos + 3 + indent_list[-1])
             elif is_use and line[pos] == ':' and not re.search(r":\s*" + LINEBREAK_STR, line, RE_FLAGS):
-                indent_list.append(pos + 2 + indent_list[-1])
+                #--- MODIFIED_15: Add conditions to make sure this is the last colon.
+                if not re.search(r":", line[pos+1:], RE_FLAGS):
+                    print("in is_use")
+                    indent_list.append(pos + 2 + indent_list[-1])
+            print("indent_list7(F90Aligner Core) = ", indent_list)
 
         # Don't align if delimiter opening directly before line break
         if level and re.search(DEL_OPEN_STR + r"\s*" + LINEBREAK_STR, line,
@@ -1583,6 +1616,7 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             indent = [0] * len(lines)
         else:
             indent = [len(l) - len((l.lstrip(' ')).lstrip('&'))  for l in lines]
+        print("indent1 = ", indent)
 
         comment_lines = format_comments(lines, comments, strip_comments)
 
@@ -1603,6 +1637,7 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
         print("is_special = ", is_special)
         print("in_format_off_block = ", in_format_off_block)
         print("auto_format = ", auto_format)
+        print("indent2 = ", indent)
         print("--------------------------")
 
         if is_special[0]:
@@ -1680,11 +1715,13 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             # target indent for next line
             rel_indent = req_indents[nfl] if nfl < len(req_indents) else 0
 
+            print("indent3 = ", indent)
             if indent_special != 3:
                 indenter.process_lines_of_fline(
                     f_line, lines, rel_indent, indent_size,
                     stream.line_nr, indent_fypp, manual_lines_indent)
                 indent = indenter.get_lines_indent()
+                print("indent4 = ", indent)
 
             lines, indent = prepend_ampersands(lines, indent, pre_ampersand)
 
@@ -1704,7 +1741,6 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             if indent[0] < len(label):
                 indent = [ind + len(label) - indent[0] for ind in indent]
 
-        print("indent = ", indent)
         print("lines = ", lines)
         print("orig_lines = ", orig_lines)
         print("indent_special = ", indent_special)
