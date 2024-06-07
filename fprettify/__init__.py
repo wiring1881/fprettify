@@ -1073,6 +1073,10 @@ def replace_keywords_single_fline(f_line, case_dict):
                 elif part == "value":
                     if line_parts[pos+1:].count(':') != 2:
                         continue
+                #--- MODIFIED_14: For keyword "operator".
+                elif part == "operator":
+                    if line_parts[pos+1:].count('(') == 0:
+                        continue
 
                 part = swapcase(part, case_dict['keywords'])
             elif F90_MODULES_RE.match(part):
