@@ -402,14 +402,18 @@ F90_PROCEDURES_RE = re.compile(r"\b(" + "|".join((
     "conjg", "cos", "cosh", "count", "cshift", "date_and_time", "dble",
     "digits", "dim", "dot_product", "dprod", "eoshift", "epsilon",
     "exp", "exponent", "floor", "fraction", "huge", "iachar", "iand",
-    "ibclr", "ibits", "ibset", "ichar", "ieor", "index", "int", "ior",
+    #--- MODIFIED_18: Index is taken out to avoid.
+    #>>> "ibclr", "ibits", "ibset", "ichar", "ieor", "index", "int", "ior",
+    "ibclr", "ibits", "ibset", "ichar", "ieor", "int", "ior",
     "ishft", "ishftc", "kind", "lbound", "len", "len_trim", "lge", "lgt",
     "lle", "llt", "log", "log10", "logical", "matmul", "max",
     "maxexponent", "maxloc", "maxval", "merge", "min", "minexponent",
     "minloc", "minval", "mod", "modulo", "mvbits", "nearest", "nint",
     "not", "pack", "precision", "present", "product", "radix",
-    ## Real is taken out here to avoid highlighting declarations.
-    "random_number", "random_seed", "range", ## "real"
+    #--- MODIFIED_18: Range is taken out to avoid.
+    #>>> ## Real is taken out here to avoid highlighting declarations.
+    #>>> "random_number", "random_seed", "range", ## "real"
+    "random_number", "random_seed",
     "repeat", "reshape", "rrspacing", "scale", "scan",
     "selected_int_kind", "selected_real_kind", "set_exponent",
     "shape", "sign", "sin", "sinh", "size", "spacing", "spread", "sqrt",
@@ -805,7 +809,9 @@ class F90Aligner(object):
         print("line_nr = ", line_nr)
         print("level = ", level)
         print("indent_list1(F90Aligner Core) = ", indent_list)
-        for pos, char in CharFilter(line):
+        #--- MODIFIED_17: Add filter_fypp set to False to enable multi-line fypp directives alignment.
+        #>>> for pos, char in CharFilter(line):
+        for pos, char in CharFilter(line, filter_fypp=False):
             print("pos, char = ", pos, char)
 
             print("indent_list2(F90Aligner Core) = ", indent_list)
@@ -1055,12 +1061,13 @@ def replace_keywords_single_fline(f_line, case_dict):
                 print("sline = ", sline)
                 #--- MODIFIED_14: For keyword "type".
                 if part == "type":
-                    if (not re.match(r"^\s*(END\s+)?" + part, sline) or
+                    if (not re.match(r"^\s*((SELECT|END)\s+)?" + part, sline) or
                         line_parts[pos+1:].count('=') == 1):
                         continue
                 #--- MODIFIED_14: For keyword "contains".
                 elif part == "contains":
-                    if not re.match(r"^\s*" + part, sline):
+                    if (not re.match(r"^\s*" + part, sline) or
+                        line_parts[pos+1:].count('=') == 1):
                         continue
                 #--- MODIFIED_14: For keyword "value".
                 elif part == "value":
@@ -1071,6 +1078,13 @@ def replace_keywords_single_fline(f_line, case_dict):
             elif F90_MODULES_RE.match(part):
                 part = swapcase(part, case_dict['procedures'])
             elif F90_PROCEDURES_RE.match(part):
+                # #--- MODIFIED_14: (Blocked) For function "index".
+                # sline = ''.join(line_parts[:pos + 1])
+                # print("sline = ", sline)
+                # if part == "index":
+                #     if re.match(r".*?(subroutine|function|%)" + r"\s*" + part, sline, re.IGNORECASE):
+                #         continue
+
                 ok = False
                 for pos2 in range(pos+1, nbparts):
                     part2 = line_parts[pos2]
@@ -1657,13 +1671,16 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
 
             #--- MODIFIED_14: Impose case where do_format is False.
             if impose_case and not is_fypp_line:
+                linebreak_pos = get_linebreak_pos(lines, filter_fypp=not indent_fypp)
+                print("linebreak_pos = ", linebreak_pos)
+
                 f_line = replace_keywords_single_fline(f_line, case_dict)
 
                 #--- MODIFIED_14: Regenerate lines from f_line.
                 fline = f_line
                 for pos, line in enumerate(lines):
-                    if comments[0]:
-                        line = re.sub(re.escape(comments[0]), '', line)
+                    if comments[pos]:
+                        line = re.sub(re.escape(comments[pos]), '', line)
 
                     tokens = line.strip()
                     if tokens:
@@ -1679,38 +1696,50 @@ def reformat_ffile_combined(infile, outfile, impose_indent=True, indent_size=3, 
             else:
                 manual_lines_indent = []
 
+            print("check_lines1 = ", lines)
             lines, pre_ampersand, ampersand_sep = remove_pre_ampersands(
                 lines, is_special, orig_filename, stream.line_nr)
 
+            print("check_lines2 = ", lines)
             linebreak_pos = get_linebreak_pos(lines, filter_fypp=not indent_fypp)
 
             f_line = f_line.strip(' ')
 
+            print("check_lines3 = ", lines)
             if impose_replacements:
                 f_line = replace_relational_single_fline(f_line, cstyle)
 
             print("impose_case = ", impose_case)
+            print("check_lines4 = ", lines)
             #--- MODIFIED_14: Don't impose case for fypp lines.
             #>>> if impose_case:
             if impose_case and not is_fypp_line:
                 f_line = replace_keywords_single_fline(f_line, case_dict)
 
+            print("check_lines5 = ", lines)
             if impose_whitespace:
                 lines = format_single_fline(
                     f_line, whitespace, whitespace_dict, linebreak_pos, ampersand_sep,
                     scope_parser, format_decl, orig_filename, stream.line_nr, auto_format)
+                print("check_lines6 = ", lines)
 
                 lines = append_comments(lines, comment_lines, is_special)
+                print("check_lines7 = ", lines)
             #--- MODIFIED_03: f_line is used to regenerate lines when impose_whitespace is True,
             #---              so if impose_whitespace is False, impose_case would fail. Here's
             #---              to ensure regeneration of lines even if impose_whitespace is False.
             else:
                 #--- Extract split_reformatted_line invocation from format_single_fline and apply
                 #--- the rest just as above to force regeneration of lines from f_line.
+                print("f_line(split_reformatted_line) = ", f_line)
+                print("linebreak_pos(split_reformatted_line) = ", linebreak_pos)
+                print("ampersand_sep(split_reformatted_line) = ", ampersand_sep)
                 lines = split_reformatted_line(
                     f_line, linebreak_pos, ampersand_sep, f_line, orig_filename, stream.line_nr)
+                print("check_lines8 = ", lines)
 
                 lines = append_comments(lines, comment_lines, is_special)
+                print("check_lines9 = ", lines)
 
             # target indent for next line
             rel_indent = req_indents[nfl] if nfl < len(req_indents) else 0
@@ -1993,7 +2022,9 @@ def get_linebreak_pos(lines, filter_fypp=True):
 
     for line in lines:
         found = None
-        for char_pos, _ in CharFilter(line, filter_strings=False):
+        #--- MODIFIED_17: Add filter_fypp set to False to enable multi-line fypp directives alignment.
+        #>>> for char_pos, _ in CharFilter(line, filter_strings=False):
+        for char_pos, _ in CharFilter(line, filter_strings=False, filter_fypp=False):
             if re.match(LINEBREAK_STR, line[char_pos:], RE_FLAGS):
                 found = char_pos
         if found:
